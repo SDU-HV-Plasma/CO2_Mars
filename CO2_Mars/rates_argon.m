@@ -1,0 +1,67 @@
+function [nsp,species,X,R,lambda]=rates_argon(Te,P,n,area_volume,Tg,only_e_balance)
+
+% R1: e + Ar   => Ar^+ + 2e    k = 5e-14*exp(-15.7/Te) m3/s
+% R2: e + Ar   => Ar^* + e     k = 2.2e-14*exp(-12.4/Te) m3/s
+% R3: e + Ar^* => Ar^+ + 2e    k = 2.1e-13*exp(-5.3/Te) m3/s
+% R4:     Ar^* => Ar + hv      tau = 60e-6 sec
+
+species{1}='e';         charge(1)=-1;       mass(1)=9.1e-31;%kg  
+species{2}='Ar^*';      charge(2)=0;        mass(2)=6.026e-26;
+species{3}='Ar^+';      charge(3)=1;        mass(3)=6.026e-26;
+nsp=length(species);
+
+if(Te==0)
+    return;
+end
+
+ng=3.54e13*P*1e9;%m-3
+
+%Gas phase reactions
+number_of_reactions=4;
+K(1:number_of_reactions)=0;
+R(1:number_of_reactions)=0;
+X(nsp,number_of_reactions+1)=0;
+%First: Reactions involving generation/loss of electrons
+K(1)=5e-14*exp(-15.7/Te);     de(1)=15.7;
+K(3)=2.1e-13*exp(-5.3/Te);    de(3)=5.3;
+R(1)=K(1)*n(1)*ng;
+R(3)=K(3)*n(1)*n(2);
+%Second: Rest of reactions
+if(~only_e_balance)
+    K(2)=2.2e-14*exp(-12.4/Te);   de(2)=12.4;
+    K(4)=1/60e-6;                 de(4)=0;
+
+    R(2)=K(2)*n(1)*ng;
+    R(4)=K(4)*n(2);
+end
+
+%Wall losses
+W(2)=-area_volume*0.25*n(2)*sqrt(8*1.6e-19*Tg/pi/mass(2));
+W(3)=-area_volume*n(3)*sqrt(1.6e-19*Te/mass(3));
+W(1)=W(3);
+
+
+% e: species 1
+isp=1;
+X(isp,1)=R(1);
+X(isp,3)=R(3);
+if(~only_e_balance)
+    % Ar*: species 2
+    isp=2;
+    X(isp,2)=R(2);
+    X(isp,3)=-R(3);
+    X(isp,4)=-R(4);
+
+    % Ar+: species 3
+    isp=3;
+    X(isp,1)=R(1);
+    X(isp,3)=R(3);
+end
+%Wall losses
+
+X(:,(length(R)+1))=W;
+%Map reactions to wavelengths
+%This can be use to generate synthetic spectra
+lambda=zeros(1,length(R));
+%Example: Reaction 4 radiates at 850nm
+lambda(4)= 850; 

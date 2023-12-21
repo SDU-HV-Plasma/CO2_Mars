@@ -1,0 +1,13 @@
+function [dne]=electron_particle_balance(Te,P,n,area_volume,Tg,rates,e_isp)
+    [nsp,species,X]=rates_CO2m(Te,P,n,area_volume,Tg,1);
+
+    dne=abs(sum(X(e_isp,:))); 
+%     figure(100010)
+%     subplot(2,1,1)
+%     h=semilogy(Te,dne,'.');
+%     hold on
+%     subplot(2,1,2)
+%     h=plot(Te,sum(X(e_isp,1:end-1)),'or');
+%     hold on
+%     h=plot(Te,-(X(e_isp,end)),'xb');    
+%     pause
